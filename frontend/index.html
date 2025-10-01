@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📧 Phishing Detector</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; max-width: 800px; margin: auto; }
+    textarea { width: 90%; height: 150px; margin-top: 10px; }
+    button { margin: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    .result { margin-top: 20px; font-weight: bold; font-size: 18px; }
+    .box { border: 1px solid #ccc; padding: 10px; margin: 15px auto; width: 90%; text-align: left; background: #f9f9f9; }
+  </style>
+</head>
+<body>
+  <h1>📧 Phishing Email Detector</h1>
+
+  <textarea id="emailText" placeholder="Paste email text here..."></textarea><br>
+  <button onclick="checkEmail()">Check Email (Manual)</button>
+  <button onclick="fetchGmail()">Fetch Latest Gmail</button>
+
+  <div id="result" class="result"></div>
+  <div id="emailBox" class="box" style="display:none;"></div>
+  <div id="senderInfo" class="box" style="display:none;"></div>
+
+  <script>
+    async function checkEmail() {
+      const text = document.getElementById("emailText").value;
+      if (!text.trim()) {
+        alert("Please enter email text!");
+        return;
+      }
+      const res = await fetch("http://127.0.0.1:5000/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      const data = await res.json();
+      document.getElementById("result").innerText =
+        `Prediction (Body): ${data.prediction} (Confidence: ${data.confidence}%)`;
+    }
+
+    async function fetchGmail() {
+      const res = await fetch("http://127.0.0.1:5000/fetch_gmail");
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById("result").innerText = data.error;
+      } else {
+        document.getElementById("result").innerText =
+          `Prediction (Body): ${data.body_prediction.prediction} (Confidence: ${data.body_prediction.confidence}%)`;
+        document.getElementById("emailBox").style.display = "block";
+        document.getElementById("emailBox").innerText = "Email Snippet (Preview): \n" + data.email_snippet;
+        document.getElementById("senderInfo").style.display = "block";
+        document.getElementById("senderInfo").innerHTML =
+          `<b>Sender:</b> ${data.sender_info.sender}<br>
+           <b>Domain:</b> ${data.sender_info.domain}<br>
+           <b>Flags:</b> ${data.sender_info.flags.join(", ")}`;
+      }
+    }
+  </script>
+</body>
+</html>
